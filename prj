@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+#
+# BASH script to run basic Cargo commands.
+# Author: Igor Lesik 2021
+
+COMMANDS="help build run check test bench doc release clean layout"
+
+# For auto completion with TAB: source ./prj
+complete -W "${COMMANDS}" ./prj
+
+BUILD_DIR=../build
+OPT_TARGET_DIR="--target-dir ${BUILD_DIR}"
+
+case "$1" in
+    help)
+        shift
+        echo Commands: ${COMMANDS}.
+        echo "For details: ./prj <CMD> --help"
+        echo "For auto completion: source ./prj"
+        ;;
+    build)
+        shift
+        cargo build ${OPT_TARGET_DIR} $@
+        ;;
+    release)
+        shift
+        cargo build --release ${OPT_TARGET_DIR} $@
+        ;;
+    run)
+        shift
+        cargo run ${OPT_TARGET_DIR} $@
+        ;;
+    check)
+        shift
+        rustup update
+        cargo check ${OPT_TARGET_DIR} $@
+        cargo clippy ${OPT_TARGET_DIR} $@
+        ;;
+    test)
+        shift
+        cargo test -j 8 ${OPT_TARGET_DIR} $@
+        ;;
+    bench)
+        shift
+        cargo bench ${OPT_TARGET_DIR} $@
+        ;;
+    doc)
+        shift
+        cargo doc --no-deps ${OPT_TARGET_DIR} $@
+        echo "Now you can do:"
+        echo "firefox ${BUILD_DIR}/doc/svdocgen/index.html &"
+        ;;
+    clean)
+        shift
+        cargo clean ${OPT_TARGET_DIR} $@
+        ;;
+    layout)
+        shift
+        echo "https://doc.rust-lang.org/cargo/guide/project-layout.html"
+        tree .
+        echo
+        cargo tree
+        ;;
+    code)
+        shift
+        code -n . $@
+        ;;
+    assets)
+        shift
+        cd assets && make
+        ;;
+    *)
+        echo Run ./prj help
+        ;;
+esac
