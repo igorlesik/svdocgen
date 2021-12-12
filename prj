@@ -69,6 +69,11 @@ case "$1" in
         shift
         cd assets && make
         ;;
+    samples)
+        shift
+        mkdir ${BUILD_DIR}/samples
+        cd samples && make SVDOCGEN="../${BUILD_DIR}/debug/svdocgen" TARGET_DIR="../${BUILD_DIR}/samples"
+        ;;
     *)
         echo Run ./prj help
         ;;

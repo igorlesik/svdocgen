@@ -1,3 +1,8 @@
+//extern crate svdocgen;
+
+use svdocgen;
+use svdocgen::mdbook::generate as generator;
+
 #[svgbobdoc::transform]
 ///
 ///
@@ -8,7 +13,8 @@
 ///     |   \ \|
 ///     '----'-'
 /// ```
-
 fn main() {
     println!("Hello, world!");
+    svdocgen::args::parse_args();
+    generator::generate();
 }
