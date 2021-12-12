@@ -2,9 +2,9 @@
 all: sample1 sample2
 
 sample1:
-	@mkdir ${TARGET_DIR}/$@
-	${SVDOCGEN}
+	@mkdir -p ${TARGET_DIR}/$@
+	${SVDOCGEN} -o ${TARGET_DIR}/$@
 
 sample2:
-	@mkdir ${TARGET_DIR}/$@
+	@mkdir -p ${TARGET_DIR}/$@
 	${SVDOCGEN}

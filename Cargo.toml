@@ -9,8 +9,9 @@ edition = "2021"
 # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
 #
 [dependencies]
-svgbobdoc = "0.2"
+svgbobdoc = { version = "0.2", features = [] }
 mdbook = "^0.4.14"
+clap = "^2.34.0"
 
 [[bin]]
 name = "svdocgen"

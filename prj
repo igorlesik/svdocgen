@@ -71,7 +71,7 @@ case "$1" in
         ;;
     samples)
         shift
-        mkdir ${BUILD_DIR}/samples
+        mkdir -p ${BUILD_DIR}/samples
         cd samples && make SVDOCGEN="../${BUILD_DIR}/debug/svdocgen" TARGET_DIR="../${BUILD_DIR}/samples"
         ;;
     *)
