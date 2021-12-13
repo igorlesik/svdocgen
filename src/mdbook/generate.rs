@@ -11,6 +11,7 @@ use std::io::{BufWriter, Write};
 
 const MDBOOK_SRC_DIR: &str = "src";
 const MDBOOK_SUMMARY_MD: &str = "SUMMARY.md";
+const MDBOOK_BOOK_TOML: &str = "book.toml";
 
 #[svgbobdoc::transform]
 /// Generate mdBook sources.
@@ -44,6 +45,8 @@ pub fn generate(options: &args::ParsedOptions) -> Result<(),String> {
 
     create_summary_md(mdbook_src_dir)?;
 
+    create_book_toml(&options.output_dir)?;
+
     Ok(())
 }
 
@@ -68,6 +71,39 @@ fn create_summary_md(path: &str) -> Result<(),String> {
     };
 
     let data = "# Summary\n- [test](SUMMARY.md)";
+
+    let mut writer = BufWriter::new(file);
+
+    match writer.write_all(data.as_bytes()) {
+        Err(e) => return Err(e.to_string()),
+        Ok(_) => (),
+    }
+
+    Ok(())
+}
+
+/// Create mdBook book.toml file.
+///
+/// The `book.toml` file is used by mdBook to know the configuration.
+///
+fn create_book_toml(path: &str) -> Result<(),String> {
+
+    let book_toml_fname = Path::new(&path).join(MDBOOK_BOOK_TOML);
+    let book_toml_fname = book_toml_fname.to_str().unwrap();
+
+    let file = match fs::OpenOptions::new()
+        .read(false)
+        .write(true)
+        .create(true)
+        .open(book_toml_fname) {
+            Err(e) => return Err(e.to_string()),
+            Ok(file) => file,
+    };
+
+    let data = r#"
+    [book]
+    title = "Documentation: Project X"
+    "#;
 
     let mut writer = BufWriter::new(file);
 
