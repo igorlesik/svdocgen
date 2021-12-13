@@ -15,7 +15,7 @@ pub struct ParsedOptions {
 /// Uses `clap` crate to parse command line arguments.
 ///
 pub fn parse_args() -> ParsedOptions {
-    println!("i parse args");
+
     let matches = App::new("SystemVerilog Documentation Generator")
         .version("0.1.0")
         .author("Igor Lesik <xxx@xxx.com>")
