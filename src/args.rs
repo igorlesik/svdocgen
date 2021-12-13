@@ -4,11 +4,19 @@
 
 use clap::{Arg, App/*, SubCommand*/};
 
-/// Use `clap` crate to parse command line arguments.
+/// All configuration options in one place.
 ///
-pub fn parse_args() {
+pub struct ParsedOptions {
+    pub output_dir: String,
+}
+
+/// Parse command line arguments and return ParsedOptions struct.
+///
+/// Uses `clap` crate to parse command line arguments.
+///
+pub fn parse_args() -> ParsedOptions {
     println!("i parse args");
-    let _matches = App::new("SystemVerilog Documentation Generator")
+    let matches = App::new("SystemVerilog Documentation Generator")
         .version("0.1.0")
         .author("Igor Lesik <xxx@xxx.com>")
         .about("Finds .sv and .md files in SV project directory and generates documentation.")
@@ -19,4 +27,12 @@ pub fn parse_args() {
             .takes_value(true)
             .help("Set output directory for generated artifacts."))
         .get_matches();
+
+    let output_dir = matches.value_of("output").unwrap_or("svdoc");
+
+    let options = ParsedOptions {
+        output_dir: String::from(output_dir),
+    };
+
+    return options;
 }

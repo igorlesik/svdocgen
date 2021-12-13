@@ -7,4 +7,4 @@ sample1:
 
 sample2:
 	@mkdir -p ${TARGET_DIR}/$@
-	${SVDOCGEN}
+	${SVDOCGEN} -o ${TARGET_DIR}/$@

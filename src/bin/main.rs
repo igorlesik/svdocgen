@@ -17,6 +17,6 @@ use svdocgen::mdbook::generate as generator;
 /// ```
 fn main() {
     println!("Hello, world!");
-    svdocgen::args::parse_args();
-    generator::generate();
+    let options = svdocgen::args::parse_args();
+    generator::generate(&options);
 }
