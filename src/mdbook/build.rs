@@ -35,7 +35,7 @@ pub fn build(options: &args::ParsedOptions) -> Result<(),String> {
     }
 
 
-    let mut md = MDBook::load(&options.output_dir).expect("Unable to load the book");
+    let /*mut*/ md = MDBook::load(&options.output_dir).expect("Unable to load the book");
 
     md.build().expect("Building failed");
 

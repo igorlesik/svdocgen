@@ -8,6 +8,7 @@ use clap::{Arg, App/*, SubCommand*/};
 ///
 pub struct ParsedOptions {
     pub output_dir: String,
+    pub inputs: Vec<String>,
 }
 
 /// Parse command line arguments and return ParsedOptions struct.
@@ -26,12 +27,20 @@ pub fn parse_args() -> ParsedOptions {
             .value_name("DIR")
             .takes_value(true)
             .help("Set output directory for generated artifacts."))
+        .arg(Arg::with_name("INPUT")
+            .help("Set the input file or directory")
+            .required(true)
+            .multiple(true)
+            .index(1))
         .get_matches();
 
     let output_dir = matches.value_of("output").unwrap_or("svdoc");
 
+    let inputs: Vec<&str> = matches.values_of("INPUT").unwrap().collect();
+
     let options = ParsedOptions {
         output_dir: String::from(output_dir),
+        inputs: inputs.iter().map(|&x| String::from(x)).collect(),
     };
 
     return options;

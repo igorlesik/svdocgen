@@ -3,11 +3,12 @@
 //!
 //!
 
-use crate::args;
 use std::fs;
 use std::path::Path;
 use std::io::{BufWriter, Write};
 
+use crate::args;
+use crate::mdbook;
 
 const MDBOOK_SRC_DIR: &str = "src";
 const MDBOOK_SUMMARY_MD: &str = "SUMMARY.md";
@@ -43,6 +44,8 @@ pub fn generate(options: &args::ParsedOptions) -> Result<(),String> {
         Ok(_) => println!("Created directory '{}'", mdbook_src_dir),
     }
 
+    mdbook::files::collect_sources(options)?;
+
     create_summary_md(mdbook_src_dir)?;
 
     create_book_toml(&options.output_dir)?;
@@ -65,12 +68,20 @@ fn create_summary_md(path: &str) -> Result<(),String> {
         .read(false)
         .write(true)
         .create(true)
+        .truncate(true)
         .open(summary_fname) {
             Err(e) => return Err(e.to_string()),
             Ok(file) => file,
     };
 
-    let data = "# Summary\n- [test](SUMMARY.md)";
+    let data = r#"# Summary
+- [test](SUMMARY.md)
+- [test2]()
+
+---
+
+- [User's Documentation]()
+"#;
 
     let mut writer = BufWriter::new(file);
 
@@ -95,15 +106,23 @@ fn create_book_toml(path: &str) -> Result<(),String> {
         .read(false)
         .write(true)
         .create(true)
+        .truncate(true)
         .open(book_toml_fname) {
             Err(e) => return Err(e.to_string()),
             Ok(file) => file,
     };
 
     let data = r#"
-    [book]
-    title = "Documentation: Project X"
-    "#;
+[book]
+title = "Documentation: Project X"
+authors = ["Godzilla"]
+
+[output.html]
+
+# cargo install mdbook-linkcheck
+# [output.linkcheck]  # enable the "mdbook-linkcheck" renderer
+
+"#;
 
     let mut writer = BufWriter::new(file);
 

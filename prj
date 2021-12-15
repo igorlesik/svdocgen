@@ -3,7 +3,20 @@
 # BASH script to run basic Cargo commands.
 # Author: Igor Lesik 2021
 
-COMMANDS="help build run check test bench doc release clean layout"
+COMMANDS="help build release production clean run check test bench doc layout code assets samples"
+
+read -r -d '' COMMANDS_HELP << EOM
+Description of commands:
+
+build:
+    Build target with profile=debug.
+release:
+    Build target with profile=release.
+production:
+    Build target with profile=production which is "release" with LTO.
+
+[] means optional argument and <> means required argument.
+EOM
 
 # For auto completion with TAB: source ./prj
 complete -W "${COMMANDS}" ./prj
@@ -17,6 +30,7 @@ case "$1" in
         echo Commands: ${COMMANDS}.
         echo "For details: ./prj <CMD> --help"
         echo "For auto completion: source ./prj"
+        echo "${COMMANDS_HELP}"
         ;;
     build)
         shift
@@ -25,6 +39,10 @@ case "$1" in
     release)
         shift
         cargo build --release ${OPT_TARGET_DIR} $@
+        ;;
+    production)
+        shift
+        cargo build --profile production ${OPT_TARGET_DIR} $@
         ;;
     run)
         shift

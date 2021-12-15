@@ -24,3 +24,6 @@
 
 pub mod args;
 pub mod mdbook;
+
+// TODO static_assert!
+const _: () = assert!(std::mem::size_of::<u64>() == 8);

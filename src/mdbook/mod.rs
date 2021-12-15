@@ -2,5 +2,6 @@
 //!
 //! Most of the work is done by <https://rust-lang.github.io/mdBook/index.html>.
 
-pub mod generate;
-pub mod build;
+pub mod files;    // collect SV files
+pub mod generate; // generate mdBook source files
+pub mod build;    // build mdBook
