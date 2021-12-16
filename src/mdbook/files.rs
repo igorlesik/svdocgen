@@ -38,23 +38,24 @@ impl FsNode {
         }
     }
 
-    fn exists(&self, _path: &PathBuf) -> bool {
-        /*match &*self {
-            FsNode::File(path) => return path.eq(s),
-            FsNode::Dir((path,nodes)) => {
-                if path.eq(s) {
-                    return true;
-                }
-                else {
-                    for node in nodes {
-                        if node.exists(s) {
-                            return true;
-                        }
+    fn exists(&self, path: &PathBuf) -> bool {
+        let mut node: &FsNode = self;
+        for component in path.components() {
+            //println!("component {:?}", component);
+            match component {
+                path::Component::Normal(_) => {
+                    //println!("normal component {:?}", component);
+                    let name = component.as_os_str().to_string_lossy();
+                    let child = node.children.iter().find(|child| child.name.eq(&name));
+                    node = match child {
+                        Some(existing_node) => existing_node,
+                        None => return false,
                     }
-                }
-            },
-        }*/
-        false
+                },
+                _ => (),
+            }
+        }
+        true
     }
 }
 
