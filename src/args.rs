@@ -1,10 +1,12 @@
 //! Parse `svdocgen` command line arguments.
 //!
 //! Most of the work is done by <https://docs.rs/clap/latest/clap/>.
+//! After the parsing all information is put in to `struct ParsedOptions`.
+//!
 
 use clap::{Arg, App/*, SubCommand*/};
 
-/// All configuration options in one place.
+/// All configuration options and input info in one place.
 ///
 pub struct ParsedOptions {
     pub output_dir: String,

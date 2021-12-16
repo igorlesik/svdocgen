@@ -23,6 +23,7 @@
 //! TODO: #[doc = svgbobdoc::transform_mdstr!(
 
 pub mod args;
+pub mod fsnode;
 pub mod mdbook;
 
 // TODO static_assert!

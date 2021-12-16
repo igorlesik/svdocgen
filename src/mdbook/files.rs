@@ -2,80 +2,29 @@
 //!
 
 //use std::fs;
-use std::path;
+//use std::path;
 use std::path::{Path, PathBuf};
 
 use crate::args;
+use crate::fsnode::FsNode;
 
-/// File System node as File or Directory.
-///
-pub struct FsNode {
-    name: String,
-    children: Vec<FsNode>
-}
-
-impl FsNode {
-    fn push(&mut self, path: &PathBuf) {
-        let mut node: &mut FsNode = self;
-        for component in path.components() {
-            //println!("component {:?}", component);
-            match component {
-                path::Component::Normal(_) => {
-                    //println!("normal component {:?}", component);
-                    let name = component.as_os_str().to_string_lossy();
-                    let pos = node.children.iter().position(|child| child.name.eq(&name));
-                    node = match pos {
-                        Some(pos) => node.children.get_mut(pos).unwrap(),
-                        None => {
-                            let new_node = FsNode {name: name.to_string(), children: Vec::new()};
-                            node.children.push(new_node);
-                            node.children.last_mut().unwrap()
-                        },
-                    }
-                },
-                _ => (),
-            }
-        }
-    }
-
-    fn exists(&self, path: &PathBuf) -> bool {
-        let mut node: &FsNode = self;
-        for component in path.components() {
-            //println!("component {:?}", component);
-            match component {
-                path::Component::Normal(_) => {
-                    //println!("normal component {:?}", component);
-                    let name = component.as_os_str().to_string_lossy();
-                    let child = node.children.iter().find(|child| child.name.eq(&name));
-                    node = match child {
-                        Some(existing_node) => existing_node,
-                        None => return false,
-                    }
-                },
-                _ => (),
-            }
-        }
-        true
-    }
-}
 
 /// Info about user's source files.
 ///
 pub struct SrcFiles {
-    //pub roots: Vec<String>,
     pub nodes: FsNode,
 }
 
-pub struct DstFiles {
-
-}
+//pub struct DstFiles {
+//
+//}
 
 /// Data about all the files.
 ///
-pub struct Files {
-    pub src: SrcFiles,
-    pub dst: DstFiles,
-}
+//pub struct Files {
+//    pub src: SrcFiles,
+//    pub dst: DstFiles,
+//}
 
 /// Collect info about user's source files.
 ///
@@ -85,7 +34,7 @@ pub fn collect_sources(options: &args::ParsedOptions) -> Result<SrcFiles,String>
 
     // Create vector of valid/existing input files|dirs.
     for input in &options.inputs {
-        println!("input: {}", input);
+        //println!("input: {}", input);
         let path = Path::new(input);
         if !path.exists() {
             let include = options.includes.iter().find(|&x| Path::new(x).join(path).exists());
@@ -102,6 +51,7 @@ pub fn collect_sources(options: &args::ParsedOptions) -> Result<SrcFiles,String>
         children: Vec::new()
     };
 
+    // Create FsNode with roots
     for input in &inputs {
         println!("input path: {:?}", input);
         let is_already_present = nodes.exists(input);
@@ -113,9 +63,15 @@ pub fn collect_sources(options: &args::ParsedOptions) -> Result<SrcFiles,String>
         }
     }
 
-    let /*mut*/ src = SrcFiles {
-        //roots: options.inputs.clone(),
-        nodes: nodes, //Vec::new()
+    // Collect .sv and .md in root directories
+    fn find_dirs_and_collect_files(node: &FsNode, path: &PathBuf) {
+        println!("traverse {}: {:?}", node.name, path);
+    }
+
+    nodes.traverse(&mut PathBuf::from(""), find_dirs_and_collect_files);
+
+    let src = SrcFiles {
+        nodes: nodes,
     };
 
     Ok(src)
