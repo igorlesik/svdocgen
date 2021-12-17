@@ -1,15 +1,26 @@
 //! Tree structure to keep FS paths.
 //!
+//! FsNodeIter implement external iterator for FsNode tree.
+//! Implementation ideas:
+//!
+//! - <https://aloso.github.io/2021/03/09/creating-an-iterator>
+//!
 
 use std::path;
 use std::path::{/*Path,*/ PathBuf};
 
 /// File System node as path to file or directory.
 ///
+///#[derive(Clone)]
 pub struct FsNode {
     pub name: String,
     pub children: Vec<FsNode>,
 }
+
+
+/// Tuple struct wrapping FsNode.
+pub struct FsNodeIter<'a>(&'a FsNode);
+
 
 impl FsNode {
 
@@ -56,7 +67,13 @@ impl FsNode {
         true
     }
 
-    pub fn traverse(&self, parent_path: &mut PathBuf, f: /*impl Fn*/fn(&FsNode, &PathBuf)) {
+    /// Traverse (iterate over) depth-first.
+    ///
+    pub fn traverse(
+        &self,
+        parent_path: &mut PathBuf,
+        f: &mut impl FnMut(&FsNode, &PathBuf)
+    ) {
         let path = parent_path;
         for child in &self.children {
             path.push(child.name.clone());
@@ -65,4 +82,35 @@ impl FsNode {
             path.pop();
         }
     }
+
+    pub fn iter(&self) -> FsNodeIter<'_> {
+        FsNodeIter(self)
+    }
+
 }
+
+impl Clone for FsNode {
+
+    fn clone(&self) -> Self {
+        FsNode {
+            name: self.name.clone(),
+            children: self.children.clone()
+        }
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        self.name = source.name.clone();
+        self.children = source.children.clone();
+    }
+}
+
+
+impl<'a> Iterator for FsNodeIter<'a> {
+    type Item = &'a FsNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        //todo!()
+        None
+    }
+}
+

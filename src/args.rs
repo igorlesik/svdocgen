@@ -49,13 +49,14 @@ pub fn parse_args() -> ParsedOptions {
 
     let inputs: Vec<&str> = matches.values_of("INPUT").unwrap().collect();
 
-    let includes: Vec<&str> = matches.values_of("include").unwrap().collect();
+    let includes: Vec<&str> = match matches.values_of("include") {
+        Some(values) => values.collect(),
+        None => Vec::new(),
+    };
 
-    let options = ParsedOptions {
+    ParsedOptions {
         output_dir: String::from(output_dir),
         inputs: inputs.iter().map(|&x| String::from(x)).collect(),
         includes: includes.iter().map(|&x| String::from(x)).collect(),
-    };
-
-    return options;
+    }
 }

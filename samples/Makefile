@@ -1,5 +1,5 @@
-.PHONY: all sample1 sample2
-all: sample1 sample2
+.PHONY: all sample1 sample2 sample3
+all: sample1 sample2 sample3
 
 sample1:
 	@mkdir -p ${TARGET_DIR}/$@
@@ -8,3 +8,7 @@ sample1:
 sample2:
 	@mkdir -p ${TARGET_DIR}/$@
 	${SVDOCGEN} -o ${TARGET_DIR}/$@ -i sample1 And3.sv Mux2.sv i/do/not/exist And3.sv
+
+sample3:
+	@mkdir -p ${TARGET_DIR}/$@
+	${SVDOCGEN} -o ${TARGET_DIR}/$@ ./sample1
