@@ -4,11 +4,13 @@
 //!
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io::{BufWriter, Write};
 
 use crate::args;
 use crate::mdbook;
+use crate::mdbook::files::SrcFiles;
+use crate::fsnode::FsNode;
 
 const MDBOOK_SRC_DIR: &str = "src";
 const MDBOOK_SUMMARY_MD: &str = "SUMMARY.md";
@@ -44,7 +46,9 @@ pub fn generate(options: &args::ParsedOptions) -> Result<(),String> {
         Ok(_) => println!("Created directory '{}'", mdbook_src_dir),
     }
 
-    mdbook::files::collect_sources(options)?;
+    let src_files = mdbook::files::collect_sources(options)?;
+
+    create_files_md(mdbook_src_dir, &src_files)?;
 
     create_summary_md(mdbook_src_dir)?;
 
@@ -75,7 +79,8 @@ fn create_summary_md(path: &str) -> Result<(),String> {
     };
 
     let data = r#"# Summary
-- [test](SUMMARY.md)
+- [List Of Files](files.md)
+  - [a1]()
 - [test2]()
 
 ---
@@ -129,6 +134,49 @@ authors = ["Godzilla"]
     match writer.write_all(data.as_bytes()) {
         Err(e) => return Err(e.to_string()),
         Ok(_) => (),
+    }
+
+    Ok(())
+}
+
+/// Create files.md file that lists all input files.
+///
+///
+fn create_files_md(path: &str, files: &SrcFiles) -> Result<(),String> {
+
+    let fname = Path::new(&path).join("files.md");
+    let fname = fname.to_str().unwrap();
+
+    let file = match fs::OpenOptions::new()
+        .read(false)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(fname) {
+            Err(e) => return Err(e.to_string()),
+            Ok(file) => file,
+    };
+
+    let mut data: Vec<String> = Vec::new();
+    data.push("# Files\n\n".to_string());
+
+    let mut/*env*/ print_files = |_node: &FsNode, path: &PathBuf| {
+        if path.is_file() {
+            if let Some(path_str) = path.to_str() {
+                data.push(format!("- {}\n", path_str));
+            }
+        }
+    };
+
+    files.nodes.traverse(&mut PathBuf::from(""), &mut print_files);
+
+    let mut writer = BufWriter::new(file);
+
+    for d in &data {
+        match writer.write_all(d.as_bytes()) {
+            Err(e) => return Err(e.to_string()),
+            Ok(_) => (),
+        }
     }
 
     Ok(())

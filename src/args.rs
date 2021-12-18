@@ -8,6 +8,8 @@ use clap::{Arg, App/*, SubCommand*/};
 
 /// All configuration options and input info in one place.
 ///
+/// TODO: think to use <https://lib.rs/crates/structopt>
+///
 pub struct ParsedOptions {
     pub output_dir: String,
     pub inputs: Vec<String>,
