@@ -48,6 +48,8 @@ pub fn generate(options: &args::ParsedOptions) -> Result<(),String> {
 
     let src_files = mdbook::files::collect_sources(options)?;
 
+    copy_src_files_md(mdbook_src_dir, &src_files)?;
+
     create_files_md(mdbook_src_dir, &src_files)?;
 
     create_summary_md(mdbook_src_dir)?;
@@ -135,6 +137,54 @@ authors = ["Godzilla"]
         Err(e) => return Err(e.to_string()),
         Ok(_) => (),
     }
+
+    Ok(())
+}
+
+/// Copy all input files into mdBook `src` directory.
+///
+///
+fn copy_src_files_md(path: &str, files: &SrcFiles) -> Result<(),String> {
+
+    let target_dir = Path::new(&path).join("src");
+    let target_dir = target_dir.to_str().unwrap();
+
+    match fs::create_dir_all(target_dir) {
+        Err(e) => return Err(e.to_string()),
+        Ok(_) => (),
+    }
+
+    let mut/*env*/ create_dirs = |_node: &FsNode, path: &PathBuf| {
+        if path.is_dir() {
+            if let Some(path_str) = path.to_str() {
+                if let Some(target_str) = Path::new(&target_dir).join(&path_str).to_str() {
+                    match fs::create_dir_all(target_str) {
+                        Err(e) => println!("error {}", e.to_string()),
+                        Ok(_) => println!("create dir: {}", target_str),
+                    }
+                }
+            }
+        }
+    };
+
+    files.nodes.traverse(&mut PathBuf::from(""), &mut create_dirs);
+
+    let mut/*env*/ copy_files = |_node: &FsNode, path: &PathBuf| {
+        if path.is_file() { if  let Some(fname) = path.file_name() {
+            let target = if let Some(parent) = path.parent() {
+                Path::new(&target_dir).join(parent).join(fname)
+            }
+            else {
+                Path::new(&target_dir).join(fname)
+            };
+            match fs::copy(&path, &target) {
+                Err(e) => println!("error {:?} copying {:?} {:?}", e, &path, &target),
+                Ok(nr_bytes) => println!("copied {} bytes from {:?} to {:?}", nr_bytes, &path, &target),
+            }
+        }}
+    };
+
+    files.nodes.traverse(&mut PathBuf::from(""), &mut copy_files);
 
     Ok(())
 }
