@@ -48,11 +48,9 @@ pub fn generate(options: &args::ParsedOptions) -> Result<(),String> {
 
     let src_files = mdbook::files::collect_sources(options)?;
 
-    copy_src_files_md(mdbook_src_dir, &src_files)?;
+    copy_src_files(mdbook_src_dir, &src_files)?;
 
-    create_files_md(mdbook_src_dir, &src_files)?;
-
-    create_summary_md(mdbook_src_dir)?;
+    create_summary_md(mdbook_src_dir, &src_files)?;
 
     create_book_toml(&options.output_dir)?;
 
@@ -65,9 +63,9 @@ pub fn generate(options: &args::ParsedOptions) -> Result<(),String> {
 /// in what order they should appear, what their hierarchy is
 /// and where the source files are. Without this file, there is no book.
 ///
-fn create_summary_md(path: &str) -> Result<(),String> {
+fn create_summary_md(mdbook_src_dir: &str, src_files: &SrcFiles) -> Result<(),String> {
 
-    let summary_fname = Path::new(&path).join(MDBOOK_SUMMARY_MD);
+    let summary_fname = Path::new(&mdbook_src_dir).join(MDBOOK_SUMMARY_MD);
     let summary_fname = summary_fname.to_str().unwrap();
 
     let file = match fs::OpenOptions::new()
@@ -80,21 +78,25 @@ fn create_summary_md(path: &str) -> Result<(),String> {
             Ok(file) => file,
     };
 
-    let data = r#"# Summary
-- [List Of Files](files.md)
-  - [a1]()
-- [test2]()
+    let mut data: Vec<String> = Vec::new();
+    data.push("# Summary\n".to_string());
+    data.push("- [Files](files.md)\n".to_string());
+    create_files_md(mdbook_src_dir, &src_files)?;
 
----
-
-- [User's Documentation]()
-"#;
+    data.push("\n---\n\n- [User's Documentation]()\n".to_string());
+    let users_md_docs = list_users_md_docs(mdbook_src_dir, src_files)?;
+    for users_doc in &users_md_docs {
+        data.push(format!("{:indent$}- [{}]({})\n", " ",
+            users_doc.1, users_doc.2, indent=users_doc.0*2));
+    }
 
     let mut writer = BufWriter::new(file);
 
-    match writer.write_all(data.as_bytes()) {
-        Err(e) => return Err(e.to_string()),
-        Ok(_) => (),
+    for d in &data {
+        match writer.write_all(d.as_bytes()) {
+            Err(e) => return Err(e.to_string()),
+            Ok(_) => (),
+        }
     }
 
     Ok(())
@@ -144,7 +146,7 @@ authors = ["Godzilla"]
 /// Copy all input files into mdBook `src` directory.
 ///
 ///
-fn copy_src_files_md(path: &str, files: &SrcFiles) -> Result<(),String> {
+fn copy_src_files(path: &str, files: &SrcFiles) -> Result<(),String> {
 
     let target_dir = Path::new(&path).join("src");
     let target_dir = target_dir.to_str().unwrap();
@@ -230,4 +232,29 @@ fn create_files_md(path: &str, files: &SrcFiles) -> Result<(),String> {
     }
 
     Ok(())
+}
+
+fn list_users_md_docs(
+    _mdbook_src_dir: &str,
+    src_files: &SrcFiles
+) -> Result<Vec<(usize,String,String)>,String>
+{
+    let md_files = mdbook::files::get_md_files(&src_files.nodes)?;
+
+    let mut list: Vec<(usize, String, String)> = Vec::new();
+
+    let mut/*env*/ list_md_files = |node: &FsNode, path: &PathBuf| {
+        if path.is_file() {
+            let mdbook_path = Path::new("src").join(path);
+            let mdbook_path_str = mdbook_path.to_str().unwrap_or("");
+            list.push((1, node.name.clone(), mdbook_path_str.to_string()));
+        }
+        else {
+            //TODO indent++ when dir
+        }
+    };
+
+    md_files.traverse(&mut PathBuf::from(""), &mut list_md_files);
+
+    Ok(list)
 }

@@ -111,3 +111,25 @@ fn visit_dir_and_search_files(nodes: &mut FsNode, dir: &Path) -> io::Result<()> 
 
     Ok(())
 }
+
+pub fn get_md_files(all_files: &FsNode) -> Result<FsNode,String> {
+
+    let mut md_files = FsNode {
+        name: String::from(""),
+        children: Vec::new()
+    };
+
+    let mut/*env*/ filter_md_files = |_node: &FsNode, path: &PathBuf| {
+        if path.is_file() {
+            if let Some(ext) = path.extension() {
+                if ext.eq("md") {
+                    md_files.push(&path);
+                }
+            }
+        }
+    };
+
+    all_files.traverse(&mut PathBuf::from(""), &mut filter_md_files);
+
+    Ok(md_files)
+}
