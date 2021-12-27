@@ -78,22 +78,22 @@ fn create_summary_md(mdbook_src_dir: &str, src_files: &SrcFiles) -> Result<(),St
             Ok(file) => file,
     };
 
-    let mut data: Vec<String> = Vec::new();
-    data.push("# Summary\n".to_string());
-    data.push("- [Files](files.md)\n".to_string());
-    create_files_md(mdbook_src_dir, &src_files)?;
+    let mut text_buf: Vec<String> = Vec::new();
+    text_buf.push("# Summary\n".to_string());
+    let mut svtext = create_sv_docs(mdbook_src_dir, &src_files)?;
+    text_buf.append(&mut svtext);
 
-    data.push("\n---\n\n- [User's Documentation]()\n".to_string());
+    text_buf.push("\n---\n\n- [User's Documentation]()\n".to_string());
     let users_md_docs = list_users_md_docs(mdbook_src_dir, src_files)?;
     for users_doc in &users_md_docs {
-        data.push(format!("{:indent$}- [{}]({})\n", " ",
+        text_buf.push(format!("{:indent$}- [{}]({})\n", " ",
             users_doc.1, users_doc.2, indent=users_doc.0*2));
     }
 
     let mut writer = BufWriter::new(file);
 
-    for d in &data {
-        match writer.write_all(d.as_bytes()) {
+    for text in &text_buf {
+        match writer.write_all(text.as_bytes()) {
             Err(e) => return Err(e.to_string()),
             Ok(_) => (),
         }
@@ -156,7 +156,7 @@ fn copy_src_files(path: &str, files: &SrcFiles) -> Result<(),String> {
         Ok(_) => (),
     }
 
-    let mut/*env*/ create_dirs = |_node: &FsNode, path: &PathBuf| {
+    let mut/*env*/ create_dirs = |_node: &FsNode, path: &PathBuf, _level: usize| {
         if path.is_dir() {
             if let Some(path_str) = path.to_str() {
                 if let Some(target_str) = Path::new(&target_dir).join(&path_str).to_str() {
@@ -169,9 +169,9 @@ fn copy_src_files(path: &str, files: &SrcFiles) -> Result<(),String> {
         }
     };
 
-    files.nodes.traverse(&mut PathBuf::from(""), &mut create_dirs);
+    files.nodes.traverse_top(&mut create_dirs);
 
-    let mut/*env*/ copy_files = |_node: &FsNode, path: &PathBuf| {
+    let mut/*env*/ copy_files = |_node: &FsNode, path: &PathBuf, _level: usize| {
         if path.is_file() { if  let Some(fname) = path.file_name() {
             let target = if let Some(parent) = path.parent() {
                 Path::new(&target_dir).join(parent).join(fname)
@@ -186,7 +186,7 @@ fn copy_src_files(path: &str, files: &SrcFiles) -> Result<(),String> {
         }}
     };
 
-    files.nodes.traverse(&mut PathBuf::from(""), &mut copy_files);
+    files.nodes.traverse_top(&mut copy_files);
 
     Ok(())
 }
@@ -194,7 +194,7 @@ fn copy_src_files(path: &str, files: &SrcFiles) -> Result<(),String> {
 /// Create files.md file that lists all input files.
 ///
 ///
-fn create_files_md(path: &str, files: &SrcFiles) -> Result<(),String> {
+fn create_files_md(path: &str, files: &FsNode) -> Result<(),String> {
 
     let fname = Path::new(&path).join("files.md");
     let fname = fname.to_str().unwrap();
@@ -212,7 +212,7 @@ fn create_files_md(path: &str, files: &SrcFiles) -> Result<(),String> {
     let mut data: Vec<String> = Vec::new();
     data.push("# Files\n\n".to_string());
 
-    let mut/*env*/ print_files = |_node: &FsNode, path: &PathBuf| {
+    let mut/*env*/ print_files = |_node: &FsNode, path: &PathBuf, _level: usize| {
         if path.is_file() {
             if let Some(path_str) = path.to_str() {
                 data.push(format!("- {}\n", path_str));
@@ -220,7 +220,7 @@ fn create_files_md(path: &str, files: &SrcFiles) -> Result<(),String> {
         }
     };
 
-    files.nodes.traverse(&mut PathBuf::from(""), &mut print_files);
+    files.traverse_top(&mut print_files);
 
     let mut writer = BufWriter::new(file);
 
@@ -243,18 +243,40 @@ fn list_users_md_docs(
 
     let mut list: Vec<(usize, String, String)> = Vec::new();
 
-    let mut/*env*/ list_md_files = |node: &FsNode, path: &PathBuf| {
+    let mut/*env*/ list_md_files = |node: &FsNode, path: &PathBuf, level: usize| {
         if path.is_file() {
             let mdbook_path = Path::new("src").join(path);
             let mdbook_path_str = mdbook_path.to_str().unwrap_or("");
-            list.push((1, node.name.clone(), mdbook_path_str.to_string()));
+            list.push((level, node.name.clone(), mdbook_path_str.to_string()));
         }
         else {
-            //TODO indent++ when dir
+            list.push((level, node.name.clone(), "".to_string()));
         }
     };
 
-    md_files.traverse(&mut PathBuf::from(""), &mut list_md_files);
+    md_files.traverse(&mut PathBuf::from(""), 1, &mut list_md_files);
 
     Ok(list)
+}
+
+fn create_sv_docs(
+    mdbook_src_dir: &str,
+    all_files: &SrcFiles
+) -> Result<Vec<String>,String>
+{
+
+    let sv_files = mdbook::files::get_sv_files(&all_files.nodes)?;
+
+    let mut text_buf: Vec<String> = Vec::new();
+
+    create_files_md(mdbook_src_dir, &sv_files)?;
+    text_buf.push("- [Files](files.md)\n".to_string());
+
+    text_buf.push("- [Modules]()\n".to_string());
+    text_buf.push("- [Functions]()\n".to_string());
+    text_buf.push("- [Packages]()\n".to_string());
+    text_buf.push("- [Interfaces]()\n".to_string());
+    text_buf.push("- [Classes]()\n".to_string());
+
+    Ok(text_buf)
 }

@@ -70,7 +70,7 @@ pub fn collect_sources(options: &args::ParsedOptions) -> Result<SrcFiles,String>
     let mut nodes_with_files = nodes.clone();
 
     // Collect .sv and .md in the input directories.
-    let mut/*env*/ collect_files = |node: &FsNode, path: &PathBuf| {
+    let mut/*env*/ collect_files = |node: &FsNode, path: &PathBuf, _level: usize| {
         println!("traverse {}: {:?}", node.name, path);
         if path.is_dir() && node.children.is_empty() {
             println!("checking for files in {:?}", path);
@@ -81,7 +81,7 @@ pub fn collect_sources(options: &args::ParsedOptions) -> Result<SrcFiles,String>
         }
     };
 
-    nodes.traverse(&mut PathBuf::from(""), &mut collect_files);
+    nodes.traverse_top(&mut collect_files);
 
     let src = SrcFiles {
         nodes: nodes_with_files,
@@ -112,24 +112,37 @@ fn visit_dir_and_search_files(nodes: &mut FsNode, dir: &Path) -> io::Result<()> 
     Ok(())
 }
 
-pub fn get_md_files(all_files: &FsNode) -> Result<FsNode,String> {
+pub fn get_files_with_extensions(
+    all_files: &FsNode,
+    extensions: &[&str]
 
-    let mut md_files = FsNode {
+    ) -> Result<FsNode,String>
+{
+
+    let mut files_with_ext = FsNode {
         name: String::from(""),
         children: Vec::new()
     };
 
-    let mut/*env*/ filter_md_files = |_node: &FsNode, path: &PathBuf| {
+    let mut/*env*/ filter_files = |_node: &FsNode, path: &PathBuf, _level: usize| {
         if path.is_file() {
             if let Some(ext) = path.extension() {
-                if ext.eq("md") {
-                    md_files.push(&path);
+                if extensions.contains(&ext.to_str().unwrap_or("")) {
+                    files_with_ext.push(&path);
                 }
             }
         }
     };
 
-    all_files.traverse(&mut PathBuf::from(""), &mut filter_md_files);
+    all_files.traverse_top(&mut filter_files);
 
-    Ok(md_files)
+    Ok(files_with_ext)
+}
+
+pub fn get_md_files(all_files: &FsNode) -> Result<FsNode,String> {
+    get_files_with_extensions(all_files, &["md"])
+}
+
+pub fn get_sv_files(all_files: &FsNode) -> Result<FsNode,String> {
+    get_files_with_extensions(all_files, &["sv", "v"])
 }

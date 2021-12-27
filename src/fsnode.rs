@@ -72,15 +72,23 @@ impl FsNode {
     pub fn traverse(
         &self,
         parent_path: &mut PathBuf,
-        f: &mut impl FnMut(&FsNode, &PathBuf)
+        level: usize,
+        f: &mut impl FnMut(&FsNode, &PathBuf, usize)
     ) {
         let path = parent_path;
         for child in &self.children {
             path.push(child.name.clone());
-            f(child, &path);
-            child.traverse(path, f);
+            f(child, &path, level);
+            child.traverse(path, level + 1, f);
             path.pop();
         }
+    }
+
+    pub fn traverse_top(
+        &self,
+        f: &mut impl FnMut(&FsNode, &PathBuf, usize))
+    {
+        self.traverse(&mut PathBuf::from(""), 0, f)
     }
 
     pub fn iter(&self) -> FsNodeIter<'_> {
