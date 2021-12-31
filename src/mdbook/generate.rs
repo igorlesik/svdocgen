@@ -242,6 +242,55 @@ fn create_files_md(path: &str, files: &FsNode) -> Result<(),String> {
     Ok(())
 }
 
+/// Create modules.md file that lists all input files.
+///
+///
+fn create_modules_md(path: &str, files: &FsNode) -> Result<(),String> {
+
+    let fname = Path::new(&path).join("modules.md");
+    let fname = fname.to_str().unwrap();
+
+    let file = match fs::OpenOptions::new()
+        .read(false)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(fname) {
+            Err(e) => return Err(e.to_string()),
+            Ok(file) => file,
+    };
+
+    fn print_module_info(path: &str) -> Vec<String> {
+        mdbook::svmodule::generate_sv_module_info(path)
+    }
+
+    let mut text: Vec<String> = Vec::new();
+    text.push("# Modules\n\n".to_string());
+
+    let mut/*env*/ print_modules = |_node: &FsNode, path: &PathBuf, _level: usize| {
+        if path.is_file() {
+            if let Some(path_str) = path.to_str() {
+                text.push(format!("- {}\n\n", path_str));
+                let mut new_text_chunk = print_module_info(path_str);
+                text.append(&mut new_text_chunk);
+            }
+        }
+    };
+
+    files.traverse_top(&mut print_modules);
+
+    let mut writer = BufWriter::new(file);
+
+    for t in &text {
+        match writer.write_all(t.as_bytes()) {
+            Err(e) => return Err(e.to_string()),
+            Ok(_) => (),
+        }
+    }
+
+    Ok(())
+}
+
 fn list_users_md_docs(
     _mdbook_src_dir: &str,
     src_files: &SrcFiles
@@ -280,7 +329,9 @@ fn create_sv_docs(
     create_files_md(mdbook_src_dir, &sv_files)?;
     text_buf.push("- [Files](files.md)\n".to_string());
 
-    text_buf.push("- [Modules]()\n".to_string());
+    create_modules_md(mdbook_src_dir, &sv_files)?;
+    text_buf.push("- [Modules](modules.md)\n".to_string());
+
     text_buf.push("- [Functions]()\n".to_string());
     text_buf.push("- [Packages]()\n".to_string());
     text_buf.push("- [Interfaces]()\n".to_string());
