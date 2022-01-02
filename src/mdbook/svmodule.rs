@@ -3,7 +3,7 @@
 //!
 //!
 
-use sv_parser::{parse_sv, unwrap_node, Locate, RefNode};
+use sv_parser::{parse_sv, unwrap_node, unwrap_locate, Locate, RefNode, SyntaxTree};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -34,13 +34,13 @@ pub fn generate_sv_module_info(
 
                     // Original string can be got by SyntaxTree::get_str(self, locate: &Locate)
                     let id = syntax_tree.get_str(&id).unwrap();
-                    text.push(format!("module: {}\n", id));
+                    print_module(&mut text, file_path, id, false, &syntax_tree, &node);
                 }
                 RefNode::ModuleDeclarationAnsi(x) => {
                     let id = unwrap_node!(x, ModuleIdentifier).unwrap();
                     let id = get_identifier(id).unwrap();
                     let id = syntax_tree.get_str(&id).unwrap();
-                    text.push(format!("module: {}\n", id));
+                    print_module(&mut text, file_path, id, true, &syntax_tree, &node);
                 }
                 _ => (),
             }
@@ -65,3 +65,32 @@ fn get_identifier(node: RefNode) -> Option<Locate> {
     }
 }
 
+fn print_module(
+    text: &mut Vec<String>,
+    file_path: &str,
+    module_name: &str,
+    is_ansi: bool,
+    syntax_tree: &SyntaxTree,
+    module_node: &RefNode
+)
+{
+    text.push(format!("\n## Module `{}`\n\n", module_name));
+    text.push(format!("File: `{}`\n\n", file_path));
+    //text.push(format!("File: `{:?}`\n\n", _syntax_tree.get_origin(unwrap_locate!(module_node)));
+
+    text.push(format!("Ports: \n\n"));
+    if is_ansi {
+        for node in module_node.clone().into_iter() {
+            // The type of each node is RefNode
+            match node {
+                RefNode::AnsiPortDeclaration(x) => {
+                    let id = unwrap_node!(x, PortIdentifier).unwrap();
+                    let id = unwrap_locate!(id).unwrap();
+                    let id = syntax_tree.get_str(id).unwrap();
+                    text.push(format!("- {}\n", id));
+                }
+                _ => (),
+            }
+        }
+    }
+}

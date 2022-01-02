@@ -44,6 +44,13 @@ case "$1" in
         shift
         cargo build --profile production ${OPT_TARGET_DIR} $@
         ;;
+    timing) #https://fasterthanli.me/articles/why-is-my-rust-build-so-slow
+        shift
+        cargo clean --release ${OPT_TARGET_DIR}
+        RUSTC_BOOTSTRAP=1 cargo build --release ${OPT_TARGET_DIR} --quiet -Z timings $@
+        mv -f cargo-timing*.* ${BUILD_DIR}/.
+        ls -lh ${BUILD_DIR}/cargo-timing.html
+        ;;
     run)
         shift
         cargo run ${OPT_TARGET_DIR} $@

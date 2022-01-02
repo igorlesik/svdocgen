@@ -270,7 +270,6 @@ fn create_modules_md(path: &str, files: &FsNode) -> Result<(),String> {
     let mut/*env*/ print_modules = |_node: &FsNode, path: &PathBuf, _level: usize| {
         if path.is_file() {
             if let Some(path_str) = path.to_str() {
-                text.push(format!("- {}\n\n", path_str));
                 let mut new_text_chunk = print_module_info(path_str);
                 text.append(&mut new_text_chunk);
             }
