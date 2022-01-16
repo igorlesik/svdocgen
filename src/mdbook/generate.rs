@@ -183,6 +183,19 @@ fn copy_src_files(path: &str, files: &SrcFiles) -> Result<(),String> {
                 Err(e) => println!("error {:?} copying {:?} {:?}", e, &path, &target),
                 Ok(nr_bytes) => println!("copied {} bytes from {:?} to {:?}", nr_bytes, &path, &target),
             }
+
+            let mut ext = target.extension().unwrap().to_os_string();
+            if ext.eq("v") || ext.eq("sv") {
+                ext.push(".md");
+                let mut sv_md = target.clone();
+                sv_md.set_extension(ext);
+                println!("generate {:?}", sv_md);
+                let fname_str = fname.to_str().unwrap();
+                let txt = format!(
+                    "## {}\n\n```verilog\n{{{{#include {}}}}}\n```\n",
+                    fname_str, fname_str);
+                fs::write(&sv_md, txt).expect("failed to create file");
+            }
         }}
     };
 
@@ -194,7 +207,7 @@ fn copy_src_files(path: &str, files: &SrcFiles) -> Result<(),String> {
 /// Create files.md file that lists all input files.
 ///
 ///
-fn create_files_md(path: &str, files: &FsNode) -> Result<(),String> {
+fn create_files_md(path: &str, files: &FsNode) -> Result<String,String> {
 
     let fname = Path::new(&path).join("files.md");
     let fname = fname.to_str().unwrap();
@@ -210,11 +223,26 @@ fn create_files_md(path: &str, files: &FsNode) -> Result<(),String> {
     };
 
     fn show_src(data: &mut Vec<String>, path: &str) {
-        let path = Path::new("src").join(path);
-        data.push(format!("\n```verilog\n"));
-        data.push(format!("{{{{#include {}}}}}\n", path.to_str().unwrap()));
-        data.push(format!("```\n\n"));
+        let src_path = Path::new("src").join(path);
+        let path_str = src_path.to_str().unwrap();
+        let mut path_str_md = String::from(path_str);
+        path_str_md.push_str(".md");
+        data.push(format!("- [{}]({})\n", path, path_str_md));
+
+        //data.push(format!("\n```verilog\n"));
+        //data.push(format!("{{{{#include {}}}}}\n", src_path.to_str().unwrap()));
+        //data.push(format!("```\n\n"));
     }
+
+    fn add_to_list(list: &mut String, path: &str) {
+        let src_path = Path::new("src").join(path);
+        let path_str = src_path.to_str().unwrap();
+        let mut path_str_md = String::from(path_str);
+        path_str_md.push_str(".md");
+        list.push_str(format!("  - [{}]({})\n", path, path_str_md).as_str());
+    }
+
+    let mut list = String::new();
 
     let mut data: Vec<String> = Vec::new();
     data.push("# Files\n\n".to_string());
@@ -222,8 +250,9 @@ fn create_files_md(path: &str, files: &FsNode) -> Result<(),String> {
     let mut/*env*/ print_files = |_node: &FsNode, path: &PathBuf, _level: usize| {
         if path.is_file() {
             if let Some(path_str) = path.to_str() {
-                data.push(format!("- {}\n", path_str));
+                //data.push(format!("- {}\n", path_str));
                 show_src(&mut data, path_str);
+                add_to_list(&mut list, path_str);
             }
         }
     };
@@ -239,7 +268,7 @@ fn create_files_md(path: &str, files: &FsNode) -> Result<(),String> {
         }
     }
 
-    Ok(())
+    Ok(list)
 }
 
 /// Create modules.md file that lists all input files.
@@ -325,8 +354,9 @@ fn create_sv_docs(
 
     let mut text_buf: Vec<String> = Vec::new();
 
-    create_files_md(mdbook_src_dir, &sv_files)?;
+    let file_list = create_files_md(mdbook_src_dir, &sv_files)?;
     text_buf.push("- [Files](files.md)\n".to_string());
+    text_buf.push(file_list);
 
     create_modules_md(mdbook_src_dir, &sv_files)?;
     text_buf.push("- [Modules](modules.md)\n".to_string());
