@@ -24,8 +24,8 @@ const MDBOOK_BOOK_DIR: &str = "book";
 pub fn build(options: &args::ParsedOptions) -> Result<(),String> {
 
 
-    let mdbook_book_dir = Path::new(&options.output_dir).join(MDBOOK_BOOK_DIR);
-    let mdbook_book_dir = mdbook_book_dir.to_str().unwrap();
+    let mdbook_book_dir_p = Path::new(&options.output_dir).join(MDBOOK_BOOK_DIR);
+    let mdbook_book_dir = mdbook_book_dir_p.to_str().unwrap();
 
     match fs::create_dir_all(mdbook_book_dir) {
         Err(e) => { println!("Can't create '{}' error: {}",
@@ -38,6 +38,22 @@ pub fn build(options: &args::ParsedOptions) -> Result<(),String> {
     let /*mut*/ md = MDBook::load(&options.output_dir).expect("Unable to load the book");
 
     md.build().expect("Building failed");
+
+    copy_assets(&mdbook_book_dir_p).expect("failed to copy assets");
+
+    Ok(())
+}
+
+fn copy_assets(book_path: &Path)-> Result<(),String> {
+
+    let asset_highlight_js = include_bytes!("../../assets/js/highlight.js");
+    //include_flate::flate!(static asset_highlight_js: str from "../../assets/js/highlight.js");
+
+    //println!("js: {}", String::from_utf8_lossy(asset_highlight_js));
+
+    fs::write(
+        book_path.join("highlight.js"),
+        asset_highlight_js).expect("Unable to write file");
 
     Ok(())
 }

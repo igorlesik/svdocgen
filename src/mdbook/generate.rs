@@ -212,7 +212,7 @@ fn create_files_md(path: &str, files: &FsNode) -> Result<(),String> {
     fn show_src(data: &mut Vec<String>, path: &str) {
         let path = Path::new("src").join(path);
         data.push(format!("\n```verilog\n"));
-        data.push(format!("{{{{#rustdoc_include {}::10}}}}\n", path.to_str().unwrap()));
+        data.push(format!("{{{{#include {}}}}}\n", path.to_str().unwrap()));
         data.push(format!("```\n\n"));
     }
 
