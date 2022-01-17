@@ -6,13 +6,15 @@
 use sv_parser::{parse_sv, unwrap_node, unwrap_locate, Locate, RefNode, SyntaxTree};
 use sv_parser::{PortDirection, NetType, IntegerVectorType};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn generate_sv_module_info(
+    output_path: &str,
     file_path: &str
-) -> Vec<String>
+) -> (Vec<String>, Vec<(String, String, String)>)
 {
     let mut text: Vec<String> = Vec::new();
+    let mut list: Vec<(String, String, String)> = Vec::new();
 
     // The list of defined macros
     let defines = HashMap::new();
@@ -35,13 +37,15 @@ pub fn generate_sv_module_info(
 
                     // Original string can be got by SyntaxTree::get_str(self, locate: &Locate)
                     let id = syntax_tree.get_str(&id).unwrap();
-                    print_module(&mut text, file_path, id, false, &syntax_tree, &node);
+                    let item = print_module(&mut text, output_path, file_path, id, false, &syntax_tree, &node);
+                    list.push(item)
                 }
                 RefNode::ModuleDeclarationAnsi(x) => {
                     let id = unwrap_node!(x, ModuleIdentifier).unwrap();
                     let id = get_identifier(id).unwrap();
                     let id = syntax_tree.get_str(&id).unwrap();
-                    print_module(&mut text, file_path, id, true, &syntax_tree, &node);
+                    let item = print_module(&mut text, output_path, file_path, id, true, &syntax_tree, &node);
+                    list.push(item)
                 }
                 _ => (),
             }
@@ -50,7 +54,7 @@ pub fn generate_sv_module_info(
         println!("parsing of '{}' failed\n", file_path);
     }
 
-    text
+    (text, list)
 }
 
 fn get_identifier(node: RefNode) -> Option<Locate> {
@@ -89,26 +93,40 @@ fn get_whole_str(
 }
 
 fn print_module(
-    text: &mut Vec<String>,
+    top_text: &mut Vec<String>,
+    output_path: &str,
     file_path: &str,
     module_name: &str,
     is_ansi: bool,
     syntax_tree: &SyntaxTree,
     module_node: &RefNode
-)
+) -> (String, String, String)
 {
-    text.push(format!("\n## Module `{}`\n\n", module_name));
-    text.push(format!("File: `{}`\n\n", file_path));
-    //text.push(format!("File: `{:?}`\n\n", _syntax_tree.get_origin(unwrap_locate!(module_node)));
+    let mut text = String::new();
 
-    text.push(format!("Ports: \n\n"));
+    text.push_str(format!("## Module `{}`\n\n", module_name).as_str());
+    text.push_str(format!("File: `{}`\n\n", file_path).as_str());
+
+    text.push_str(format!("Ports: \n\n").as_str());
     if is_ansi {
-        print_ansi_ports(text, syntax_tree, module_node);
+        print_ansi_ports(&mut text, syntax_tree, module_node);
     }
+
+    let mut module_path = Path::new(output_path).join("src").join(file_path);
+    module_path.set_extension(format!("module.{}.md", module_name));
+    let mut src_module_path = Path::new("src").join(file_path);
+    src_module_path.set_extension(format!("module.{}.md", module_name));
+    let src_module_path = src_module_path.to_str().unwrap();
+
+    std::fs::write(module_path, text).expect("failed to write file");
+
+    top_text.push(format!("- [`{}  :{}`]({})\n", module_name, file_path, src_module_path));
+
+    (module_name.to_string(), file_path.to_string(), src_module_path.to_string())
 }
 
 fn print_ansi_ports(
-    text: &mut Vec<String>,
+    text: &mut String,
     syntax_tree: &SyntaxTree,
     module_node: &RefNode
 )
@@ -122,7 +140,7 @@ fn print_ansi_ports(
                 let id = unwrap_node!(x, PortIdentifier).unwrap();
                 let id = unwrap_locate!(id).unwrap();
                 let id = syntax_tree.get_str(id).unwrap();
-                text.push(format!("- {}\n", id));
+                text.push_str(format!("- {}\n", id).as_str());
 
                 let dir = unwrap_node!(x, PortDirection);
                 let dir_str = match dir {
@@ -131,30 +149,30 @@ fn print_ansi_ports(
                     Some(RefNode::PortDirection(PortDirection::Inout(_))) => "inout",
                     _ => "?",
                 };
-                text.push(format!("  * direction: {}\n", dir_str));
+                text.push_str(format!("  * direction: {}\n", dir_str).as_str());
 
                 let net_type = unwrap_node!(x, NetType);
                 match net_type {
                     Some(RefNode::NetType(NetType::Wire(_))) =>
-                        text.push("  * type: wire\n".to_string()),
+                        text.push_str("  * type: wire\n"),
                     _ => (),
                 }
 
                 let vnet_type = unwrap_node!(x, IntegerVectorType);
                 match vnet_type {
                     Some(RefNode::IntegerVectorType(IntegerVectorType::Reg(_))) =>
-                        text.push("  * type: reg\n".to_string()),
+                        text.push_str("  * type: reg\n"),
                     Some(RefNode::IntegerVectorType(IntegerVectorType::Logic(_))) =>
-                        text.push("  * type: logic\n".to_string()),
+                        text.push_str("  * type: logic\n"),
                     Some(RefNode::IntegerVectorType(IntegerVectorType::Bit(_))) =>
-                        text.push("  * type: bit\n".to_string()),
+                        text.push_str("  * type: bit\n"),
                     _ => (),
                 }
 
                 let width = unwrap_node!(x, PackedDimensionRange);
                 if let Some(width) = width {
                     //text.push(format!("{:?}\n", &width));
-                    text.push(format!("  * width: {}\n", get_whole_str(syntax_tree, &width)));
+                    text.push_str(format!("  * width: {}\n", get_whole_str(syntax_tree, &width)).as_str());
                 }
             }
             _ => (),

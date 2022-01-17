@@ -274,9 +274,13 @@ fn create_files_md(path: &str, files: &FsNode) -> Result<String,String> {
 /// Create modules.md file that lists all input files.
 ///
 ///
-fn create_modules_md(path: &str, files: &FsNode) -> Result<(),String> {
+fn create_modules_md(
+    output_path: &str,
+    files: &FsNode
+) -> Result<Vec<(String,String,String)>,String>
+{
 
-    let fname = Path::new(&path).join("modules.md");
+    let fname = Path::new(&output_path).join("modules.md");
     let fname = fname.to_str().unwrap();
 
     let file = match fs::OpenOptions::new()
@@ -289,9 +293,13 @@ fn create_modules_md(path: &str, files: &FsNode) -> Result<(),String> {
             Ok(file) => file,
     };
 
-    fn print_module_info(path: &str) -> Vec<String> {
-        mdbook::svmodule::generate_sv_module_info(path)
+    fn print_module_info(output_path: &str, path: &str)
+    -> (Vec<String>, Vec<(String,String,String)>)
+    {
+        mdbook::svmodule::generate_sv_module_info(output_path, path)
     }
+
+    let mut list_of_modules: Vec<(String,String,String)> = Vec::new();
 
     let mut text: Vec<String> = Vec::new();
     text.push("# Modules\n\n".to_string());
@@ -299,8 +307,9 @@ fn create_modules_md(path: &str, files: &FsNode) -> Result<(),String> {
     let mut/*env*/ print_modules = |_node: &FsNode, path: &PathBuf, _level: usize| {
         if path.is_file() {
             if let Some(path_str) = path.to_str() {
-                let mut new_text_chunk = print_module_info(path_str);
+                let (mut new_text_chunk, mut new_mod_chunk) = print_module_info(output_path, path_str);
                 text.append(&mut new_text_chunk);
+                list_of_modules.append(&mut new_mod_chunk);
             }
         }
     };
@@ -316,7 +325,7 @@ fn create_modules_md(path: &str, files: &FsNode) -> Result<(),String> {
         }
     }
 
-    Ok(())
+    Ok(list_of_modules)
 }
 
 fn list_users_md_docs(
@@ -358,8 +367,12 @@ fn create_sv_docs(
     text_buf.push("- [Files](files.md)\n".to_string());
     text_buf.push(file_list);
 
-    create_modules_md(mdbook_src_dir, &sv_files)?;
+    let mut module_list = create_modules_md(mdbook_src_dir, &sv_files)?;
+    module_list.sort();
     text_buf.push("- [Modules](modules.md)\n".to_string());
+    for module in &module_list {
+        text_buf.push(format!("  - [`{}`  :{}]({})\n", module.0, module.1, module.2));
+    }
 
     text_buf.push("- [Functions]()\n".to_string());
     text_buf.push("- [Packages]()\n".to_string());
