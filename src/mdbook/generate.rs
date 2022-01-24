@@ -127,6 +127,7 @@ title = "Documentation: Project X"
 authors = ["Godzilla"]
 
 [output.html]
+#additional-js = ["loadwavedrom.js"]
 
 # cargo install mdbook-linkcheck
 # [output.linkcheck]  # enable the "mdbook-linkcheck" renderer

@@ -7,6 +7,7 @@ use sv_parser::{parse_sv, unwrap_node, unwrap_locate, Locate, RefNode, SyntaxTre
 use sv_parser::{PortDirection, NetType, IntegerVectorType};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use regex::Regex;
 
 pub fn generate_sv_module_info(
     output_path: &str,
@@ -25,6 +26,7 @@ pub fn generate_sv_module_info(
     let result = parse_sv(file_path, &defines, &includes, false, true);
 
     if let Ok((syntax_tree, _)) = result {
+        let mut prev_node: Option<RefNode> = None;
         // &SyntaxTree is iterable
         for node in &syntax_tree {
             // The type of each node is RefNode
@@ -37,17 +39,27 @@ pub fn generate_sv_module_info(
 
                     // Original string can be got by SyntaxTree::get_str(self, locate: &Locate)
                     let id = syntax_tree.get_str(&id).unwrap();
-                    let item = print_module(&mut text, output_path, file_path, id, false, &syntax_tree, &node);
+                    let item = print_module(&mut text, output_path, file_path, id, false,
+                        &syntax_tree, &node, &prev_node);
                     list.push(item)
                 }
                 RefNode::ModuleDeclarationAnsi(x) => {
                     let id = unwrap_node!(x, ModuleIdentifier).unwrap();
                     let id = get_identifier(id).unwrap();
                     let id = syntax_tree.get_str(&id).unwrap();
-                    let item = print_module(&mut text, output_path, file_path, id, true, &syntax_tree, &node);
+                    let item = print_module(&mut text, output_path, file_path, id, true,
+                        &syntax_tree, &node, &prev_node);
                     list.push(item)
                 }
-                _ => (),
+                RefNode::ModuleDeclaration(_) => {
+                }
+                RefNode::Description(_) => {
+                }
+                RefNode::WhiteSpace(_) => {
+                }
+                RefNode::Locate(_) => {
+                }
+                x => { prev_node = Some(x); () },
             }
         }
     } else {
@@ -99,7 +111,8 @@ fn print_module(
     module_name: &str,
     is_ansi: bool,
     syntax_tree: &SyntaxTree,
-    module_node: &RefNode
+    module_node: &RefNode,
+    prev_node: &Option<RefNode>
 ) -> (String, String, String)
 {
     let mut text = String::new();
@@ -114,6 +127,8 @@ fn print_module(
 
     text.push_str(format!("\n\n### Instantiates modules: \n\n").as_str());
     print_instantiated_modules(&mut text, syntax_tree, module_node);
+
+    print_module_comments(&mut text, syntax_tree, module_node, prev_node);
 
     let mut module_path = Path::new(output_path).join("src").join(file_path);
     module_path.set_extension(format!("module.{}.md", module_name));
@@ -221,4 +236,49 @@ fn print_instantiated_modules(
             text.push_str(format!("  - {}\n", iname).as_str());
         }
     }
+}
+
+fn print_module_comments(
+    text: &mut String,
+    syntax_tree: &SyntaxTree,
+    _module_node: &RefNode,
+    prev_node: &Option<RefNode>,
+)
+{
+    for node in prev_node.clone().into_iter() {
+        match node {
+            RefNode::Comment(x) => {
+                let comment = unwrap_node!(x, Comment).unwrap();
+                //text.push_str(format!("\ncomment:\n {}\n", get_whole_str(syntax_tree, &comment)).as_str());
+                let comment = unwrap_locate!(comment).unwrap();
+                let comment = syntax_tree.get_str(comment).unwrap();
+                text.push_str(format!("\n\n### Description:\n\n").as_str());
+                text.push_str(extract_text_from_comment(comment).as_str());
+            }
+            _ => (),
+        }
+    }
+}
+
+fn extract_text_from_comment(raw_text: &str) -> String
+{
+    let re = Regex::new(r"^\s*/(\*)+").unwrap();
+    let text = re.replace_all(raw_text, "");
+
+    let re = Regex::new(r"(\*/)+\s*$").unwrap();
+    let text = re.replace_all(&text, "");
+
+    // Ugly workaround for:
+    // "Note that ^ matches after new lines, even at the end of input"
+    let re = Regex::new(r"(?m)^\s*(\*)+\s*$").unwrap();
+    let text = re.replace_all(&text, "<!--empty_line-->");
+
+    let re = Regex::new(r"(?m)^\s*(\*)+").unwrap();
+    let text = re.replace_all(&text, "");
+
+    // Fixup for the ugly workaround
+    let re = Regex::new(r"(?m)^<!--empty_line-->$").unwrap();
+    let text = re.replace_all(&text, "");
+
+    text.to_string()
 }

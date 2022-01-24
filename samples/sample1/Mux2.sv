@@ -2,13 +2,19 @@
  * 
  * Author: Igor Lesik 2014.
  *
- * <!--script type="WaveDrom">
+ * <script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/2.6.8/skins/default.js" type="text/javascript"></script>
+ * <script src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/2.6.8/wavedrom.min.js" type="text/javascript"></script>
+ * <script type="text/javascript">
+ * document.addEventListener("load", myFunction());
+ * function myFunction() {WaveDrom.ProcessAll(); }
+ * </script>
+ * <script type="WaveDrom">
  * { assign:[
  *   ["out",
  *     ["?", "sel", "in1", "in2"]
  *   ]
  * ]}
- * </script-->
+ * </script>
  *
  * <pre>
  *           +-----+
