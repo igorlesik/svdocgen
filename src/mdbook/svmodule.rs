@@ -107,10 +107,13 @@ fn print_module(
     text.push_str(format!("## Module `{}`\n\n", module_name).as_str());
     text.push_str(format!("File: `{}`\n\n", file_path).as_str());
 
-    text.push_str(format!("Ports: \n\n").as_str());
+    text.push_str(format!("### Ports: \n\n").as_str());
     if is_ansi {
         print_ansi_ports(&mut text, syntax_tree, module_node);
     }
+
+    text.push_str(format!("\n\n### Instantiates modules: \n\n").as_str());
+    print_instantiated_modules(&mut text, syntax_tree, module_node);
 
     let mut module_path = Path::new(output_path).join("src").join(file_path);
     module_path.set_extension(format!("module.{}.md", module_name));
@@ -144,8 +147,8 @@ fn print_ansi_ports(
 
                 let dir = unwrap_node!(x, PortDirection);
                 let dir_str = match dir {
-                    Some(RefNode::PortDirection(PortDirection::Input(_))) => "input",
-                    Some(RefNode::PortDirection(PortDirection::Output(_))) => "output",
+                    Some(RefNode::PortDirection(PortDirection::Input(_))) => "➔ input",
+                    Some(RefNode::PortDirection(PortDirection::Output(_))) => "output ➔",
                     Some(RefNode::PortDirection(PortDirection::Inout(_))) => "inout",
                     _ => "?",
                 };
@@ -181,3 +184,41 @@ fn print_ansi_ports(
 
 }
 
+fn print_instantiated_modules(
+    text: &mut String,
+    syntax_tree: &SyntaxTree,
+    module_node: &RefNode
+)
+{
+    let mut mod_instances: HashMap<String, Vec<String>> = HashMap::new();
+
+    for node in module_node.clone().into_iter() {
+        match node {
+            RefNode::ModuleInstantiation(x) => {
+                let mod_name = unwrap_node!(x, ModuleIdentifier).unwrap();
+                let mod_name = get_identifier(mod_name).unwrap();
+                let mod_name = syntax_tree.get_str(&mod_name).unwrap();
+
+                let inst_name = unwrap_node!(x, InstanceIdentifier).unwrap();
+                let inst_name = get_identifier(inst_name).unwrap();
+                let inst_name = syntax_tree.get_str(&inst_name).unwrap();
+
+                let /*mut*/ m = match mod_instances.get_mut(mod_name) {
+                    Some(m) => m,
+                    None => {mod_instances.insert(mod_name.to_string(), Vec::<String>::new());
+                        mod_instances.get_mut(mod_name).unwrap()},
+                };
+
+                m.push(inst_name.to_string());
+            }
+            _ => (),
+        }
+    }
+
+    for (mname, inames) in mod_instances.iter() {
+        text.push_str(format!("- {}\n", mname).as_str());
+        for iname in inames.iter() {
+            text.push_str(format!("  - {}\n", iname).as_str());
+        }
+    }
+}
