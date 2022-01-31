@@ -329,6 +329,57 @@ fn create_modules_md(
     Ok(list_of_modules)
 }
 
+fn create_ifaces_md(
+    output_path: &str,
+    files: &FsNode
+) -> Result<Vec<(String,String,String)>,String>
+{
+
+    let fname = Path::new(&output_path).join("ifaces.md");
+    let fname = fname.to_str().unwrap();
+
+    let file = match fs::OpenOptions::new()
+        .read(false).write(true).create(true).truncate(true)
+        .open(fname) {
+            Err(e) => return Err(e.to_string()),
+            Ok(file) => file,
+    };
+
+    fn print_iface_info(output_path: &str, path: &str)
+    -> (Vec<String>, Vec<(String,String,String)>)
+    {
+        mdbook::sviface::generate_sv_interface_info(output_path, path)
+    }
+
+    let mut list_of_ifaces: Vec<(String,String,String)> = Vec::new();
+
+    let mut text: Vec<String> = Vec::new();
+    text.push("# Interfaces\n\n".to_string());
+
+    let mut/*env*/ print_ifaces = |_node: &FsNode, path: &PathBuf, _level: usize| {
+        if path.is_file() {
+            if let Some(path_str) = path.to_str() {
+                let (mut new_text_chunk, mut new_iface_chunk) = print_iface_info(output_path, path_str);
+                text.append(&mut new_text_chunk);
+                list_of_ifaces.append(&mut new_iface_chunk);
+            }
+        }
+    };
+
+    files.traverse_top(&mut print_ifaces);
+
+    let mut writer = BufWriter::new(file);
+
+    for t in &text {
+        match writer.write_all(t.as_bytes()) {
+            Err(e) => return Err(e.to_string()),
+            Ok(_) => (),
+        }
+    }
+
+    Ok(list_of_ifaces)
+}
+
 fn list_users_md_docs(
     _mdbook_src_dir: &str,
     src_files: &SrcFiles
@@ -377,7 +428,15 @@ fn create_sv_docs(
 
     text_buf.push("- [Functions]()\n".to_string());
     text_buf.push("- [Packages]()\n".to_string());
-    text_buf.push("- [Interfaces]()\n".to_string());
+
+
+    let mut iface_list = create_ifaces_md(mdbook_src_dir, &sv_files)?;
+    iface_list.sort();
+    text_buf.push("- [Interfaces](ifaces.md)\n".to_string());
+    for iface in &iface_list {
+        text_buf.push(format!("  - [`{}`  :{}]({})\n", iface.0, iface.1, iface.2));
+    }
+
     text_buf.push("- [Classes]()\n".to_string());
 
     Ok(text_buf)

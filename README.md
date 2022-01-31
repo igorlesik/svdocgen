@@ -1,13 +1,22 @@
-# svdocgen
+# SvDocGen - Verilog mdBook format Documentation Generator
 
 ![Logo](assets/images/logo.svg)
+
+Reasons I made SvDocGen:
+
+1. Doxygen does not support Verilog, and I am not aware of
+   any other free tool to document Verilog projects.
+2. Doxygen is good for documenting API, but for Verilog projects
+   I need a tool to help me to generate documentation
+   describing Verilog RTL code and HW designs.
+   mdBook with [its features](https://rust-lang.github.io/mdBook/format/mdbook.html)
+   seems like a good choice to document RTL with custom .md files
+   and information extracted from Verilog code.
+3. Both mdBook and [sv-parser](https://github.com/dalance/sv-parser)
+   are Rust projects which makes it easy to combine these two.
+
 
 SvDocGen is primarily used as a command line tool,
 even though it exposes all its functionality as a Rust crate
 for integration in other projects.
 
-- https://rust-lang.github.io/mdBook/format/mdbook.html
-- https://github.com/raphlinus/pulldown-cmark vs https://github.com/kivikakk/comrak
-- https://cdnjs.com/libraries/split.js/1.6.4
-- https://github.com/dalance/sv-parser
-- https://lib.rs/crates/svinst

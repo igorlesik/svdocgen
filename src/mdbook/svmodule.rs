@@ -3,11 +3,12 @@
 //!
 //!
 
-use sv_parser::{parse_sv, unwrap_node, unwrap_locate, Locate, RefNode, SyntaxTree};
+use sv_parser::{parse_sv, unwrap_node, unwrap_locate, /*Locate,*/ RefNode, SyntaxTree};
 use sv_parser::{PortDirection, NetType, IntegerVectorType};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use regex::Regex;
+use crate::mdbook::svpar;
 
 pub fn generate_sv_module_info(
     output_path: &str,
@@ -35,7 +36,7 @@ pub fn generate_sv_module_info(
                     // unwrap_node! gets the nearest ModuleIdentifier from x
                     let id = unwrap_node!(x, ModuleIdentifier).unwrap();
 
-                    let id = get_identifier(id).unwrap();
+                    let id = svpar::get_identifier(id).unwrap();
 
                     // Original string can be got by SyntaxTree::get_str(self, locate: &Locate)
                     let id = syntax_tree.get_str(&id).unwrap();
@@ -45,7 +46,7 @@ pub fn generate_sv_module_info(
                 }
                 RefNode::ModuleDeclarationAnsi(x) => {
                     let id = unwrap_node!(x, ModuleIdentifier).unwrap();
-                    let id = get_identifier(id).unwrap();
+                    let id = svpar::get_identifier(id).unwrap();
                     let id = syntax_tree.get_str(&id).unwrap();
                     let item = print_module(&mut text, output_path, file_path, id, true,
                         &syntax_tree, &node, &prev_node);
@@ -69,40 +70,7 @@ pub fn generate_sv_module_info(
     (text, list)
 }
 
-fn get_identifier(node: RefNode) -> Option<Locate> {
-    // unwrap_node! can take multiple types
-    match unwrap_node!(node, SimpleIdentifier, EscapedIdentifier) {
-        Some(RefNode::SimpleIdentifier(x)) => {
-            return Some(x.nodes.0);
-        }
-        Some(RefNode::EscapedIdentifier(x)) => {
-            return Some(x.nodes.0);
-        }
-        _ => None,
-    }
-}
 
-fn get_whole_str(
-    syntax_tree: &SyntaxTree,
-    node: &RefNode
-) -> String
-{
-    let mut s = String::new();
-
-    for subnode in node.clone().into_iter() {
-        if let RefNode::Locate(_text) = subnode {
-            let text = unwrap_locate!(subnode);
-            if let Some(text) = text {
-                let text = syntax_tree.get_str(text);
-                if let Some(text) = text {
-                    s.push_str(text);
-                }
-            }
-        }
-    }
-
-    s
-}
 
 fn print_module(
     top_text: &mut Vec<String>,
@@ -190,7 +158,7 @@ fn print_ansi_ports(
                 let width = unwrap_node!(x, PackedDimensionRange);
                 if let Some(width) = width {
                     //text.push(format!("{:?}\n", &width));
-                    text.push_str(format!("  * width: {}\n", get_whole_str(syntax_tree, &width)).as_str());
+                    text.push_str(format!("  * width: {}\n", svpar::get_whole_str(syntax_tree, &width)).as_str());
                 }
             }
             _ => (),
@@ -211,11 +179,11 @@ fn print_instantiated_modules(
         match node {
             RefNode::ModuleInstantiation(x) => {
                 let mod_name = unwrap_node!(x, ModuleIdentifier).unwrap();
-                let mod_name = get_identifier(mod_name).unwrap();
+                let mod_name = svpar::get_identifier(mod_name).unwrap();
                 let mod_name = syntax_tree.get_str(&mod_name).unwrap();
 
                 let inst_name = unwrap_node!(x, InstanceIdentifier).unwrap();
-                let inst_name = get_identifier(inst_name).unwrap();
+                let inst_name = svpar::get_identifier(inst_name).unwrap();
                 let inst_name = syntax_tree.get_str(&inst_name).unwrap();
 
                 let /*mut*/ m = match mod_instances.get_mut(mod_name) {
