@@ -7,4 +7,5 @@ pub mod generate; // generate mdBook source files
 pub mod svpar;    // parsing helpers
 pub mod svmodule; // generate md file with SV module info
 pub mod sviface;  // generate md file with SV interface info
+pub mod svpkg;    // generate md file with SV package info
 pub mod build;    // build mdBook
