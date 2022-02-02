@@ -1,6 +1,8 @@
-# SvDocGen - Verilog mdBook format Documentation Generator
+# SvDocGen - Verilog Documentation Generator
 
 ![Logo](assets/images/logo.svg)
+
+SvDocGen generates Verilog source code documentation in mdBook format.
 
 Reasons I made SvDocGen:
 

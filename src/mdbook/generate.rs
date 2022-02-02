@@ -80,15 +80,18 @@ fn create_summary_md(mdbook_src_dir: &str, src_files: &SrcFiles) -> Result<(),St
 
     let mut text_buf: Vec<String> = Vec::new();
     text_buf.push("# Summary\n".to_string());
-    let mut svtext = create_sv_docs(mdbook_src_dir, &src_files)?;
-    text_buf.append(&mut svtext);
 
-    text_buf.push("\n---\n\n- [User's Documentation]()\n".to_string());
+    text_buf.push("\n- [User's Documentation]()\n".to_string());
     let users_md_docs = list_users_md_docs(mdbook_src_dir, src_files)?;
     for users_doc in &users_md_docs {
         text_buf.push(format!("{:indent$}- [{}]({})\n", " ",
             users_doc.1, users_doc.2, indent=users_doc.0*2));
     }
+
+    text_buf.push("\n---\n\n".to_string());
+
+    let mut svtext = create_sv_docs(mdbook_src_dir, &src_files)?;
+    text_buf.append(&mut svtext);
 
     let mut writer = BufWriter::new(file);
 
@@ -380,6 +383,57 @@ fn create_ifaces_md(
     Ok(list_of_ifaces)
 }
 
+fn create_classes_md(
+    output_path: &str,
+    files: &FsNode
+) -> Result<Vec<(String,String,String)>,String>
+{
+
+    let fname = Path::new(&output_path).join("classes.md");
+    let fname = fname.to_str().unwrap();
+
+    let file = match fs::OpenOptions::new()
+        .read(false).write(true).create(true).truncate(true)
+        .open(fname) {
+            Err(e) => return Err(e.to_string()),
+            Ok(file) => file,
+    };
+
+    fn print_class_info(output_path: &str, path: &str)
+    -> (Vec<String>, Vec<(String,String,String)>)
+    {
+        mdbook::svclass::generate_sv_class_info(output_path, path)
+    }
+
+    let mut list_of_classes: Vec<(String,String,String)> = Vec::new();
+
+    let mut text: Vec<String> = Vec::new();
+    text.push("# Classes\n\n".to_string());
+
+    let mut/*env*/ print_classes = |_node: &FsNode, path: &PathBuf, _level: usize| {
+        if path.is_file() {
+            if let Some(path_str) = path.to_str() {
+                let (mut new_text_chunk, mut new_class_chunk) = print_class_info(output_path, path_str);
+                text.append(&mut new_text_chunk);
+                list_of_classes.append(&mut new_class_chunk);
+            }
+        }
+    };
+
+    files.traverse_top(&mut print_classes);
+
+    let mut writer = BufWriter::new(file);
+
+    for t in &text {
+        match writer.write_all(t.as_bytes()) {
+            Err(e) => return Err(e.to_string()),
+            Ok(_) => (),
+        }
+    }
+
+    Ok(list_of_classes)
+}
+
 fn create_packages_md(
     output_path: &str,
     files: &FsNode
@@ -477,8 +531,6 @@ fn create_sv_docs(
         text_buf.push(format!("  - [`{}`  :{}]({})\n", module.0, module.1, module.2));
     }
 
-    text_buf.push("- [Functions]()\n".to_string());
-
     let mut pkg_list = create_packages_md(mdbook_src_dir, &sv_files)?;
     pkg_list.sort();
     text_buf.push("- [Packages](packages.md)\n".to_string());
@@ -493,7 +545,14 @@ fn create_sv_docs(
         text_buf.push(format!("  - [`{}`  :{}]({})\n", iface.0, iface.1, iface.2));
     }
 
-    text_buf.push("- [Classes]()\n".to_string());
+    let mut class_list = create_classes_md(mdbook_src_dir, &sv_files)?;
+    class_list.sort();
+    text_buf.push("- [Classes](classes.md)\n".to_string());
+    for class in &class_list {
+        text_buf.push(format!("  - [`{}`  :{}]({})\n", class.0, class.1, class.2));
+    }
+
+    text_buf.push("- [Functions]()\n".to_string());
 
     Ok(text_buf)
 }
