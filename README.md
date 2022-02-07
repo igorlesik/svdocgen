@@ -22,3 +22,12 @@ SvDocGen is primarily used as a command line tool,
 even though it exposes all its functionality as a Rust crate
 for integration in other projects.
 
+<!--hidden notes
+Create a tag to trigger a release:
+
+```
+$ git tag v0.1.1
+$ git push --tags
+```
+
+end of hidden notes-->
