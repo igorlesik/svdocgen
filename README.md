@@ -22,12 +22,13 @@ SvDocGen is primarily used as a command line tool,
 even though it exposes all its functionality as a Rust crate
 for integration in other projects.
 
+## Installation
+
+1. Load and use prebuilt binaries
+   from [Release](https://github.com/igorlesik/svdocgen/releases).
+2. cargo not published yet
+
 <!--hidden notes
-Create a tag to trigger a release:
-
-```
-$ git tag v0.1.1
-$ git push --tags
-```
-
+Github action to build binaries for releases:
+https://github.com/marketplace/actions/rust-release-binary
 end of hidden notes-->
