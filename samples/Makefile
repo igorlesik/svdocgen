@@ -1,5 +1,5 @@
-.PHONY: all sample1 sample2 sample3
-all: sample1 sample2 sample3
+.PHONY: all sample1 sample2 sample3 jtag
+all: sample1 sample2 sample3 jtag
 
 sample1:
 	@mkdir -p ${TARGET_DIR}/$@
@@ -15,3 +15,8 @@ sample3:
 	@mkdir -p ${TARGET_DIR}/$@
 	@rm -rf ${TARGET_DIR}/$@/*
 	${SVDOCGEN} -o ${TARGET_DIR}/$@ ./sample1
+
+jtag:
+	@mkdir -p ${TARGET_DIR}/$@
+	@rm -rf ${TARGET_DIR}/$@/*
+	${SVDOCGEN} -o ${TARGET_DIR}/$@ ./JtagCoreDbg

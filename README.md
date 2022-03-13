@@ -22,6 +22,10 @@ SvDocGen is primarily used as a command line tool,
 even though it exposes all its functionality as a Rust crate
 for integration in other projects.
 
+## Examples of Generated Documents
+
+https://igorlesik.github.io/svdocgen
+
 ## Installation
 
 1. Load and use prebuilt binaries
