@@ -19,4 +19,4 @@ sample3:
 jtag:
 	@mkdir -p ${TARGET_DIR}/$@
 	@rm -rf ${TARGET_DIR}/$@/*
-	${SVDOCGEN} -o ${TARGET_DIR}/$@ ./JtagCoreDbg
+	${SVDOCGEN} -o ${TARGET_DIR}/$@ ./JtagCoreDbg --project-name "CPU Core Debug Interface"

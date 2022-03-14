@@ -52,7 +52,7 @@ pub fn generate(options: &args::ParsedOptions) -> Result<(),String> {
 
     create_summary_md(mdbook_src_dir, &src_files)?;
 
-    create_book_toml(&options.output_dir)?;
+    create_book_toml(&options.output_dir, &options.project_name)?;
 
     Ok(())
 }
@@ -109,7 +109,7 @@ fn create_summary_md(mdbook_src_dir: &str, src_files: &SrcFiles) -> Result<(),St
 ///
 /// The `book.toml` file is used by mdBook to know the configuration.
 ///
-fn create_book_toml(path: &str) -> Result<(),String> {
+fn create_book_toml(path: &str, project_name: &str) -> Result<(),String> {
 
     let book_toml_fname = Path::new(&path).join(MDBOOK_BOOK_TOML);
     let book_toml_fname = book_toml_fname.to_str().unwrap();
@@ -124,9 +124,9 @@ fn create_book_toml(path: &str) -> Result<(),String> {
             Ok(file) => file,
     };
 
-    let data = r#"
+    let data = format!(r#"
 [book]
-title = "Documentation: Project X"
+title = "{}"
 authors = ["Godzilla"]
 
 [output.html]
@@ -135,7 +135,7 @@ additional-js = ["loadwavedrom.js"]
 # cargo install mdbook-linkcheck
 # [output.linkcheck]  # enable the "mdbook-linkcheck" renderer
 
-"#;
+"#, project_name);
 
     let mut writer = BufWriter::new(file);
 

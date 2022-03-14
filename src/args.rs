@@ -14,6 +14,7 @@ pub struct ParsedOptions {
     pub output_dir: String,
     pub inputs: Vec<String>,
     pub includes: Vec<String>,
+    pub project_name: String
 }
 
 /// Parse command line arguments and return ParsedOptions struct.
@@ -45,6 +46,10 @@ pub fn parse_args() -> ParsedOptions {
             .takes_value(true)
             .multiple(true)
             .number_of_values(1))
+        .arg(Arg::with_name("project-name")
+            .long("project-name")
+            .takes_value(true)
+            .help("Project name string."))
         .get_matches();
 
     let output_dir = matches.value_of("output").unwrap_or("svdoc");
@@ -56,9 +61,12 @@ pub fn parse_args() -> ParsedOptions {
         None => Vec::new(),
     };
 
+    let project_name = matches.value_of("project-name").unwrap_or("");
+
     ParsedOptions {
         output_dir: String::from(output_dir),
         inputs: inputs.iter().map(|&x| String::from(x)).collect(),
         includes: includes.iter().map(|&x| String::from(x)).collect(),
+        project_name: String::from(project_name)
     }
 }
